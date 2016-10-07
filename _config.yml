@@ -3,7 +3,7 @@ title: IncompletePackets
 baseurl: "" # the subpath of your site, e.g. /blog
 url: "https://incpac.github.io" # the base hostname & protocol for your site
 twitter_username: hideousnitrogen
-github_username:  incomplatepackets
+github_username:  incpac
 
 # Build settings
 markdown: kramdown
@@ -12,3 +12,4 @@ gems:
   - therubyracer
 
 include: ["_pages"]
+exclude: ["Gemfile", "Gemfile.lock", "Vagrantfile", "*.log"]
