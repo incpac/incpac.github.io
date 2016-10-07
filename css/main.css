@@ -42,7 +42,11 @@ ul.projects { list-style-type: none; padding-left: 0; }
   font-family: 'Source Code Pro', monospace;
 }
 
+.highlight code { font-weight: normal; }
+
 code {
   font-family: 'Source Code Pro', monospace;
   font-weight: bold;
 }
+
+
