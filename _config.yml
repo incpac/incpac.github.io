@@ -1,5 +1,5 @@
 # Site settings
-title: IncompletePackets
+title: incpac
 baseurl: "" # the subpath of your site, e.g. /blog
 url: "https://incpac.github.io" # the base hostname & protocol for your site
 twitter_username: hideousnitrogen

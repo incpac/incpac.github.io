@@ -1,8 +1,10 @@
 ---
 layout: post
-title: Setting up Hubot
+title: setting_up_hubot
 category: words
 permalink: /words/setting-up-hubot.html
+author: thomas claridge
+date: 2016/10/02
 ---
 
 So this is something I've wanted to do for a while now and I've finally gotten around to it. I have [Github's Hubot](https://hubot.github.com/) running on a dedicated Ubuntu 16.04 VM using [Slack](https://slack.com/) as it's user interface.
