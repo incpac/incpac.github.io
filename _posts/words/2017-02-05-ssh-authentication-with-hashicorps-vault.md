@@ -1,8 +1,10 @@
 ---
 layout: post
-title: SSH Authentication with Hashicorp's Vault
+title: ssh_auth_with_hashicorps_vault
 category: words
 permalink: /words/ssh-authentication-with-hashicorps-vault.html
+author: thomas claridge
+date: 2017/02/05
 ---
 
 

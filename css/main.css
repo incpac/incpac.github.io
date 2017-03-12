@@ -1,4 +1,4 @@
-  
+ 
 body {
   padding: 50px;
   font: 14px "Lucida Grande", Helvetica, Arial, sans-serif;
@@ -36,8 +36,8 @@ code {
 
 
 header, header a  { color: #464646; }
-header span#name  { font-size: 4em; font-weight: bold; }
-header span#title { font-size: 3em; }
+header span#name  { font-size: 3.25em; font-weight: bold; }
+header span#title { font-size: 2.5em; }
 
 quote.header {
   font-style: italic;
