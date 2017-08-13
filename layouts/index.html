@@ -1,0 +1,37 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <title>So Fucking Awesome</title>
+    <link rel="stylesheet" href="/css/index.css" />
+    <link rel="stylesheet" href="/css/global.css" />
+
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+  </head>
+
+  <body>
+    <div class="index">
+      <div class="index-header">
+        <h1 class="title">I'M FUCKING AWESOME</h1>
+        <h2 class="tagline">Obviously...</h2>
+        <p class="description">My name is Thomas. I’m an engineer. I’m a tinkerer. I’m a destroy, a warranty voider, a creator. This site is a place where I take notes on whatever I’m working with at the time.</p>
+      </div>
+
+      <a class="index-read-more" href="#content">Pssst. Wanna buy some drugs?</a>
+    </div>
+
+    <div class="content">
+      <h1 id="content">Check out this bullshit I wrote</h1>
+
+      {{ range first 5 .Data.Pages }}
+        <div class="post">
+          <div class="heading">
+            <h2><a href="{{ .Permalink }}">{{ .Title }}</a></h2>
+            <p class="date">Posted on {{ .Date.Format "January 2, 2006" }}</p>
+          </div>
+          <p class="summary">{{ .Summary }}</p>
+        </div>
+      {{ end }}
+    </div>
+  </body>
+</html>

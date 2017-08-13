@@ -1,0 +1,40 @@
+version: 2
+jobs:
+  build:
+    docker:
+      - image: felicianotech/docker-hugo:0.22.1
+    branches:
+      only:
+        - source
+    working_directory: ~/source
+    steps:
+      - checkout
+      - run:
+          name: "Run Hugo"
+          command: HUGO_ENV=production hugo -v -s ~/source/
+      - run:
+          name: "Test Website"
+          command: htmlproofer ~/source/public --allow-hash-href --check-html --empty-alt-ignore
+      - run:
+          name: "Git Push"
+          command: |
+            cd ~/source
+            remote=$(git config remote.origin.url)
+
+            mkdir ~/build
+            cd ~/build
+
+            git config --global user.name "$GH_NAME" > /dev/null 2>&1
+            git config --global user.email "$GH_EMAIL" > /dev/null 2>&1
+
+            git init
+            git remote add --fetch origin "$remote"
+            git pull origin master
+
+            git rm -rf .
+
+            cp -r ~/source/public/* .
+
+            git add -A
+            git commit --allow-empty -m "deploy to github pages [ci step]"
+            git push --force --quiet origin master > /dev/null 2>&1
