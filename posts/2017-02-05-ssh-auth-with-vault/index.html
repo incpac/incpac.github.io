@@ -1,0 +1,224 @@
+
+<!DOCTYPE html>
+<html>
+  <head>
+    <title>SSH Auth with Hashicorp&#39;s Vault</title>
+
+    <link rel="stylesheet" href="/css/global.css" />
+    <link rel="stylesheet" href="/css/post.css" />
+
+    <script src="https://use.fontawesome.com/7420aacd26.js"></script>
+
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+  </head>
+
+  <body>
+    <div class="content">
+      <h1 id="title"><span class="title">SSH Auth with Hashicorp&#39;s Vault</span></h1>
+
+      
+
+<p>Okay, I&rsquo;ll admit; I am shit at updating this site&hellip; blog&hellip; thing&hellip; Whatever, today we&rsquo;re going to build something cool; centralized SSH authentication using Hashicorp&rsquo;s <a href="https://www.vaultproject.io">Vault</a>. We&rsquo;re going to stand up a Vault server and use it to generate One-Time-Passwords for SSHing (totaly a word) onto other servers.</p>
+
+<h2 id="why">Why?</h2>
+
+<p>That&rsquo;s actually <a href="http://gunshowcomic.com/513">a good question</a>. Honestly, PAM just seems like a shitfest to set up and maintain.</p>
+
+<p>All right, I might be biased towards Hashicorp products. Having not actually managed a PAM enviroment before I could be wrong about its ease of management. It does give you to benifit of unique users logging onto servers helping auditability. But, if you&rsquo;re already using Vault to manage other secrets, why not use it for SSH access management as well? It gives you one-time-passwords so you won&rsquo;t have to worry about reuse. Even if you&rsquo;re not using it for authenticating your users, it could be useful for providing credentials during the provisioning of new servers.</p>
+
+<h2 id="standing-up-the-environment">Standing up the Environment</h2>
+
+<p>This part&rsquo;s pretty easy. We&rsquo;re going to use <a href="https://www.vagrantup.com/">Vagrant</a> to create two virtual machines. One to act as our Vault server and other for testing authentication. First, copy the following into a file named <code>Vagrantfile</code>.</p>
+
+<pre><code>Vagrant.configure '2' do |config|
+
+  config.vm.box = 'ubuntu/xenial64'
+
+  config.vm.define 'vault' do |vault|
+    vault.vm.network 'private_network', ip: '172.23.1.11'
+  end
+
+
+  config.vm.define 'test' do |test|
+    test.vm.network 'private_network', ip: '172.23.1.12'
+  end
+end
+</code></pre>
+
+<p>Then run <code>vagrant up</code>. This can take a while as it creates our new VM&rsquo;s. To connect to either server, use one of the following:</p>
+
+<pre><code>$ vagrant ssh vault
+$ vagrant ssh test
+</code></pre>
+
+<h2 id="set-up-vault">Set up Vault</h2>
+
+<p>Next we&rsquo;re going to have to set up our Vault server. Installing Vault is really simple; you pretty much just download and run. This entire step is run on our &ldquo;vault&rdquo; server.</p>
+
+<pre><code>$ sudo apt-get install -y unzip sshpass
+$ curl https://releases.hashicorp.com/vault/0.6.4/vault_0.6.4_linux_amd64.zip &gt; vault.zip
+$ unzip vault.zip
+$ sudo cp vault /usr/local/bin
+</code></pre>
+
+<p>Now just run <code>vault</code> to confirm it&rsquo;s on your PATH.</p>
+
+<pre><code>$ vault                                                           
+usage: vault [-version] [-help] &lt;command&gt; [args]                                        
+...                             
+</code></pre>
+
+<p>With Vault installed the next step is to start a Vault server. We&rsquo;re going to run the server in &ldquo;dev&rdquo; mode. It&rsquo;s not secure, but it means we won&rsquo;t have to screw around with the Sealing/Unsealing process. To read more on that check the official documentation <a href="https://www.vaultproject.io/intro/getting-started/deploy.html">here.</a></p>
+
+<pre><code>$ vault server -dev -dev-listen-address=&quot;0.0.0.0:8200&quot;
+==&gt; Vault server configuration:
+
+                 Backend: inmem
+                     Cgo: disabled
+              Listener 1: tcp (addr: &quot;0.0.0.0:8200&quot;, cluster address: &quot;&quot;, tls: &quot;disabled&quot;)
+               Log Level: info
+                   Mlock: supported: true, enabled: false
+                 Version: Vault v0.6.4
+             Version Sha: f4adc7fa960ed8e828f94bc6785bcdbae8d1b263
+
+==&gt; WARNING: Dev mode is enabled!
+
+In this mode, Vault is completely in-memory and unsealed.
+Vault is configured to only have a single unseal key. The root
+token has already been authenticated with the CLI, so you can
+immediately begin using the Vault CLI.
+
+The only step you need to take is to set the following
+environment variables:
+
+    export VAULT_ADDR='http://0.0.0.0:8200'
+
+The unseal key and root token are reproduced below in case you
+want to seal/unseal the Vault or play with authentication.
+</code></pre>
+
+<p>You&rsquo;re going to want to run the part where it says to export the environment variable. By default Vault is expecting to be able to connect via HTTPS but the dev server doesn&rsquo;t have SSL so it won&rsquo;t connect.</p>
+
+<pre><code>$ export VAULT_ADDR='http://127.0.0.1:8200'
+$ vault status
+Sealed: false
+Key Shares: 1
+Key Threshold: 1
+Unseal Progress: 0
+Version: 0.6.4
+Cluster Name: vault-cluster-c75b1c92
+Cluster ID: 0b68057c-c620-5c5d-aff1-9a8a4e1321ba
+</code></pre>
+
+<h2 id="setting-up-the-ssh-backend">Setting up the SSH Backend</h2>
+
+<p>Awesome. So now we&rsquo;ve got our Vault server running, we can set it up to use the SSH backend. First we&rsquo;re going to have to mount this on &ldquo;vault&rdquo;.</p>
+
+<pre><code>$ vault mount ssh
+</code></pre>
+
+<p>Create a new role with the <code>key_type</code> set to <code>otp</code>. This tells the backend to use One-Time-Passwords everytime a client wants to SSH onto a server. In this case our username is going to be <code>localadmin</code> and the machines authenticating on the <code>172.23.1.0/24</code> range.</p>
+
+<pre><code>$ vault write ssh/roles/otp_key_role key_type=otp default_user=localadmin cidr_list=172.23.1.0/24
+</code></pre>
+
+<h2 id="install-the-agent-on-the-test-server">Install the Agent on the Test Server</h2>
+
+<p>Jump onto the test server and install the agent.</p>
+
+<pre><code>$ sudo apt-get install -y unzip
+$ curl https://releases.hashicorp.com/vault-ssh-helper/0.1.2/vault-ssh-helper_0.1.2_linux_amd64.zip &gt; vault_agent.zip
+$ unzip vault_agent.zip
+$ sudo mv vault-ssh-helper /usr/local/bin
+</code></pre>
+
+<p>Create the config file <code>/etc/vault-ssh-helper.d/config.hcl</code></p>
+
+<pre><code>vault_addr = &quot;http://172.23.1.11:8200&quot;
+tls_skip_verify = true
+ssh_mount_point = &quot;ssh&quot;
+allowed_roles = &quot;*&quot;
+</code></pre>
+
+<p>Modify the <code>/etc/pam.d/sshd</code> file as per below. Note that you&rsquo;re commenting out <code>@include common-auth</code> if it already exists.</p>
+
+<pre><code>##@include common-auth
+auth requisite pam_exec.so quiet expose_authtok log=/tmp/vaultssh.log /usr/local/bin/vault-ssh-helper -config=/etc/vault-ssh-helper.d/config.hcl -dev
+auth optional pam_unix.so not_set_pass use_first_pass nodelay
+</code></pre>
+
+<p>Modify the <code>/etc/ssh/sshd_config</code> with the following</p>
+
+<pre><code>ChallengeResponseAuthentication yes
+UsePAM yes
+PasswordAuthentication no
+</code></pre>
+
+<p>Check the config</p>
+
+<pre><code>$ sudo vault-ssh-helper -verify-only -config=/etc/vault-ssh-helper.d/config.hcl -dev
+2017/02/04 11:04:48 ==&gt; WARNING: Dev mode is enabled!
+2017/02/04 11:04:48 [INFO] using SSH mount point: ssh
+2017/02/04 11:04:48 [INFO] vault-ssh-helper verification successful!
+</code></pre>
+
+<p>Create the user</p>
+
+<pre><code>sudo adduser localadmin
+</code></pre>
+
+<h2 id="test">Test</h2>
+
+<p>We&rsquo;re now ready to test. Back on the &ldquo;vault&rdquo; server run</p>
+
+<pre><code>$ vault ssh -role otp_key_role localadmin@172.23.1.12
+Welcome to Ubuntu 16.04.1 LTS (GNU/Linux 4.4.0-38-generic x86_64)
+
+ * Documentation:  https://help.ubuntu.com
+ * Management:     https://landscape.canonical.com
+ * Support:        https://ubuntu.com/advantage
+
+  Get cloud support with Ubuntu Advantage Cloud Guest:
+    http://www.ubuntu.com/business/services/cloud
+
+118 packages can be updated.
+48 updates are security updates.
+
+
+*** System restart required ***
+Last login: Sat Feb  4 11:16:44 2017 from 172.23.1.11
+localadmin@ubuntu-xenial:~$
+</code></pre>
+
+<p>If you get <code>Failed to establish SSH connection: &quot;exit status 6&quot;</code> it means that you don&rsquo;t yet trust the test server. Just SSH onto it normally and it will save this to the list on known hosts.</p>
+
+<pre><code>$ ssh localadmin@172.23.1.12
+ECDSA key fingerprint is SHA256:9rwKBR6UpLOFmX+Et49hFVpNRyhP4i2jJfw/CC70lTw.
+Are you sure you want to continue connecting (yes/no)? yes
+Warning: Permanently added '172.23.1.12' (ECDSA) to the list of known hosts.
+</code></pre>
+
+<h2 id="conclusion">Conclusion</h2>
+
+<p>Awesome. So now we can use Vault to generate credentials for logging onto servers. Next up you&rsquo;d want to stand this up as a production Vault cluster and lock down who can access the &ldquo;ssh&rdquo; mount point. That is definitely not going to be covered here.</p>
+
+<p>Further Reading:</p>
+
+<ul>
+<li><a href="https://www.vaultproject.io/intro/getting-started/deploy.html">Deploy Vault</a></li>
+<li><a href="https://www.vaultproject.io/docs/secrets/ssh/index.html">Vault SSH Documentation</a></li>
+<li><a href="https://github.com/hashicorp/vault-ssh-helper">Vault SSH Helper</a></li>
+</ul>
+
+    </div>
+    
+    <div class="menu">
+      <h1><a href="/">So Fucking Awesome.</a></h1>
+      <p>
+        <a href="https://github.com/incpac"><i class="fa fa-github"></i></a>
+        <a href="https://twitter.com/hideousnitrogen"><i class="fa fa-twitter"></i></a>
+      </p>
+    </div>
+  </body>
+</html>

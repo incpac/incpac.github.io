@@ -1,0 +1,79 @@
+
+<!DOCTYPE html>
+<html>
+  <head>
+    <title>Setting Up Hubot</title>
+
+    <link rel="stylesheet" href="/css/global.css" />
+    <link rel="stylesheet" href="/css/post.css" />
+
+    <script src="https://use.fontawesome.com/7420aacd26.js"></script>
+
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+  </head>
+
+  <body>
+    <div class="content">
+      <h1 id="title"><span class="title">Setting Up Hubot</span></h1>
+
+      
+
+<p>So this is something I&rsquo;ve wanted to do for a while now and I&rsquo;ve finally gotten around to it. I have <a href="https://hubot.github.com/">Github&rsquo;s Hubot</a> running on a dedicated Ubuntu 16.04 VM using <a href="https://slack.com/">Slack</a> as it&rsquo;s user interface.</p>
+
+<h3 id="create-api-key">Create API Key</h3>
+
+<p>The Hubot interface needs access to the Slack API. This is granted through a bot API token.</p>
+
+<ol>
+<li>Log into Slack via the web portal and browse to <a href="https://my.slack.com/services/new/bot">new bot page</a>.</li>
+<li>Enter a username for your bot and click &lsquo;Add bot integration&rsquo;</li>
+<li>Copy the API tocken for later use.</li>
+</ol>
+
+<h3 id="install-prerequisites">Install Prerequisites</h3>
+
+<p>Hubot runs on coffeescript (javascript). It also needs a Redis database for persistance.</p>
+
+<pre><code>curl -sL https://deb.nodesource.com/setup_6.x | sudo -E bash -
+sudo apt-get install -y build-essential nodejs tcl redis-server
+</code></pre>
+
+<h3 id="create-your-hubot">Create Your Hubot</h3>
+
+<p>First we need a user to run the Hubot instance</p>
+
+<pre><code>sudo useradd --home /opt/hubot hubot
+</code></pre>
+
+<p>Next we install the Hubot generator</p>
+
+<pre><code>sudo npm install -g hubot coffee-script yo generator-hubot
+</code></pre>
+
+<p>Finally we can create the Hubot</p>
+
+<pre><code>cd /opt/hubot
+sudo su - hubot
+yo hubot
+</code></pre>
+
+<h3 id="run-hubot">Run hubot</h3>
+
+<pre><code>HUBOT_SLACK_TOKEN=xoxb-1234-5678-91011-00e4dd ./bin/hubot --adapter slack
+</code></pre>
+
+<p>Jump onto slack and invite hubot into general. Confirm it works by typing <strong>@hubot help</strong><br />
+You can run Hubot in the background using the likes of <code>tmux</code> or <code>screen</code>. Alternitively, you could run it as a daemon, however, I haven&rsquo;t had any luck with that.</p>
+
+    </div>
+    
+    <div class="menu">
+      <h1><a href="/">So Fucking Awesome.</a></h1>
+      <p>
+        <a href="https://github.com/incpac"><i class="fa fa-github"></i></a>
+        <a href="https://twitter.com/hideousnitrogen"><i class="fa fa-twitter"></i></a>
+      </p>
+    </div>
+  </body>
+</html>
