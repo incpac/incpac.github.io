@@ -8,6 +8,9 @@ jobs:
         - source
     working_directory: ~/source
     steps:
+      - add-ssh-keys:
+        fingerprints:
+          - "d8:9e:b4:df:1a:4a:12:ce:30:45:60:0c:d8:06:a5:6b"
       - checkout
       - run:
           name: "Run Hugo"
