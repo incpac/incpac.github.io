@@ -5,7 +5,7 @@ title = "Hugo on Github"
 
 I'll admit I have a motivation problem. I have real trouble seeing something through in a timely manner. I only started working on the second prototype of my midi controller last weekend. Version one was complete 10 months ago. I had the idea for it 14 months before that. Hell, the subject of this post was finalized and implemented a month ago. I'm starting this on the 11th but it's probably gonna end up being a couple of weeks before it actually gets published.
 
-I suppose, for the blog at least, one of the issues is I want to write more than just the technical steps. I see other blogs with long prefaces going into why they did this and that. A lot of this doesn't apply to me; I simply like building shit. 
+I suppose, for the blog at least, one of the issues is I want to write more than just the technical steps. I see other blogs with long prefaces going into why they did this and that. A lot of this doesn't apply to me; I simply like building shit.
 
 I think the problem lies in the fact that when you do a lot of technical shit as your day job, the last thing you want to do is come home and do more technical shit.
 
@@ -27,7 +27,7 @@ What we're going to do here is have a single repository. Our website will reside
 
 Sweet. Game plan's sorted. First on the list is to set up our Github repo and clone it locally. Now, I'm not going to take baby steps with you. If you're here I assume you already know how to do this.
 
-Now, we're going to create an orphaned branch. This is to keep our source branch separate from the master. To do this run 
+Now, we're going to create an orphaned branch. This is to keep our source branch separate from the master. To do this run
 
 ```
 git checkout -b --orphan source
@@ -39,7 +39,7 @@ Head over to [Circle CI](https://circleci.com) and sign up. You can use your Git
 
 You'll get an email from Github stating that a public key has been added to your repo. This allows Circle CI to clone the repo. We're going to want to also give it permissions to write.
 
-To do this, we need a dedicated SSH key for Circle. Create this now; do __not__ enter a passphrase. Head over to your repo's settings. You want "Deploy Keys". Upload the public key here, giving it read/write permissions. Then jump back to Circle CI and add the private key under "SSH Permissions". The hostname will be "github.com"
+To do this, go to the "Checkout SSH Keys" and click "Create and add user key". If you browse to your SSH keys on Github you should see the one Circle just created. This grants Circle write access to your repos. There is [a method](https://circleci.com/docs/2.0/gh-bb-integration/#adding-readwrite-deployment-keys-to-github-or-bitbucket) to only grant access to the specific repository, however you can see in the commits just after this post that I couldn't get it to work.
 
 In your repo create the config file `.circleci/config.yml` I'm going to dump the entire thing here, then we're going to go through it.
 
@@ -101,7 +101,7 @@ Basic building blocks. Says we have a config file matching the version two stand
       - image: felicianotech/docker-hugo:0.22.1
 ```
 
-We want to use the `felicianotech/docker-hugo:0.22.1` docker image. Felicianotech has been kind enough to create an image for building hugo sites on Circle. Cheers mate.
+We want to use the `felicianotech/docker-hugo:0.22.1` docker image. [Felicianotech](https://hub.docker.com/u/felicianotech/) has been kind enough to create an image for building hugo sites on Circle. Cheers mate.
 
 ```
     branches:
@@ -187,7 +187,7 @@ Copy our current build then push to the master branch.
 
 Yes, yes, I remember. The environment variables. In the Circle CI settings, there's a handy tab called "Environment Variables". This is a handy way to get configs/secrets into your build without having to include it in your repo. We want one named `GH_EMAIL` and another named `GH_NAME`.
 
-Excellent, with all that set up we should be good to commit the config file and make one last push to Github. You should then be able to see the progress in the Circle dashboard. Any issues should also show up here. 
+Excellent, with all that set up we should be good to commit the config file and make one last push to Github. You should then be able to see the progress in the Circle dashboard. Any issues should also show up here.
 
 And we're done. You should be all good from this point.
 
