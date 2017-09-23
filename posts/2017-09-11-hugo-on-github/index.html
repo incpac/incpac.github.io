@@ -1,0 +1,210 @@
+
+<!DOCTYPE html>
+<html>
+  <head>
+    <title>Hugo on Github</title>
+
+    <link rel="stylesheet" href="/css/global.css" />
+    <link rel="stylesheet" href="/css/post.css" />
+
+    <script src="https://use.fontawesome.com/7420aacd26.js"></script>
+
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+  </head>
+
+  <body>
+    <div class="content">
+      <h1 id="title"><span class="title">Hugo on Github</span></h1>
+
+      
+
+<p>I&rsquo;ll admit I have a motivation problem. I have real trouble seeing something through in a timely manner. I only started working on the second prototype of my midi controller last weekend. Version one was complete 10 months ago. I had the idea for it 14 months before that. Hell, the subject of this post was finalized and implemented a month ago. I&rsquo;m starting this on the 11th but it&rsquo;s probably gonna end up being a couple of weeks before it actually gets published.</p>
+
+<p>I suppose, for the blog at least, one of the issues is I want to write more than just the technical steps. I see other blogs with long prefaces going into why they did this and that. A lot of this doesn&rsquo;t apply to me; I simply like building shit.</p>
+
+<p>I think the problem lies in the fact that when you do a lot of technical shit as your day job, the last thing you want to do is come home and do more technical shit.</p>
+
+<p>Whatever. I told you I&rsquo;m bad at this and now I&rsquo;m just spewing crap. Let&rsquo;s give the people what they came for.</p>
+
+<h1 id="blood">Blood!</h1>
+
+<p><em>Cough</em>. I mean &ldquo;Deploying Hugo on Github Pages&rdquo;</p>
+
+<p>To completely contradict myself, here&rsquo;s a bit of a backstory. I like Jekyll. It&rsquo;s easy to use and you can control pretty much anything you want. I only really have one issue with it; it&rsquo;s written in Ruby. Now, don&rsquo;t get me wrong, I love Ruby. But man, fuck Ruby. It&rsquo;s a prick to install because you&rsquo;ve got to compile it pretty much every time. Then there&rsquo;s fucking Nokogiri. That thing&rsquo;s a shit show on Ubuntu.</p>
+
+<p>Along comes Hugo. It&rsquo;s fast, a single binary, I don&rsquo;t have to compile it, etc, etc. I only have two issues with it: the way it handles templating and the lack of integration with Github Pages. The first one I can live with, so I won&rsquo;t go into. However, the Github Pages thing really is an issue. With Jekyll, you can simply push your source to Github and they&rsquo;ll take care of the rest. With Hugo (and effectively everything not Jekyll) you have to first build your site then push. This means you&rsquo;re running two repositories.</p>
+
+<p>In steps Circle CI. Now I&rsquo;ve never actually used any sort of CI/CD before. I understand what they do, sure. But, I&rsquo;ve never actually had the need to use one. Until now, at least.</p>
+
+<p>What we&rsquo;re going to do here is have a single repository. Our website will reside in the &lsquo;master&rsquo; branch, and our Hugo source will live in a &lsquo;source&rsquo; branch. We&rsquo;re then going to set up Circle to monitor the source branch for changes, rebuild the site, then push to master.</p>
+
+<h1 id="get-on-with-it-already">Get on with it already</h1>
+
+<p>Sweet. Game plan&rsquo;s sorted. First on the list is to set up our Github repo and clone it locally. Now, I&rsquo;m not going to take baby steps with you. If you&rsquo;re here I assume you already know how to do this.</p>
+
+<p>Now, we&rsquo;re going to create an orphaned branch. This is to keep our source branch separate from the master. To do this run</p>
+
+<pre><code>git checkout -b --orphan source
+</code></pre>
+
+<p>Slap your site&rsquo;s source in here now, commit, then push the branch to GitHub.</p>
+
+<p>Head over to <a href="https://circleci.com">Circle CI</a> and sign up. You can use your Github account. On the left-hand side, you&rsquo;ll find &ldquo;Projects&rdquo;. Add a new one, find your Github Pages repo, and hit &ldquo;Setup project&rdquo;. Our language is &ldquo;Other&rdquo;. Aside from that, all defaults are fine.</p>
+
+<p>You&rsquo;ll get an email from Github stating that a public key has been added to your repo. This allows Circle CI to clone the repo. We&rsquo;re going to want to also give it permissions to write.</p>
+
+<p>To do this, go to the &ldquo;Checkout SSH Keys&rdquo; and click &ldquo;Create and add user key&rdquo;. If you browse to your SSH keys on Github you should see the one Circle just created. This grants Circle write access to your repos. There is <a href="https://circleci.com/docs/2.0/gh-bb-integration/#adding-readwrite-deployment-keys-to-github-or-bitbucket">a method</a> to only grant access to the specific repository, however you can see in the commits just after this post that I couldn&rsquo;t get it to work.</p>
+
+<p>In your repo create the config file <code>.circleci/config.yml</code> I&rsquo;m going to dump the entire thing here, then we&rsquo;re going to go through it.</p>
+
+<pre><code>version: 2
+jobs:
+  build:
+    docker:
+      - image: felicianotech/docker-hugo:0.22.1
+    branches:
+      only:
+        - source
+    working_directory: ~/source
+    steps:
+      - checkout
+      - run:
+          name: &quot;Run Hugo&quot;
+          command: HUGO_ENV=production hugo -v -s ~/source/
+      - run:
+          name: &quot;Test Website&quot;
+          command: htmlproofer ~/source/public --allow-hash-href --check-html --empty-alt-ignore
+      - run:
+          name: &quot;Git Push&quot;
+          command: |
+            cd ~/source
+            remote=$(git config remote.origin.url)
+
+            mkdir ~/build
+            cd ~/build
+
+            git config --global user.name &quot;$GH_NAME&quot; &gt; /dev/null 2&gt;&amp;1
+            git config --global user.email &quot;$GH_EMAIL&quot; &gt; /dev/null 2&gt;&amp;1
+
+            git init
+            git remote add --fetch origin &quot;$remote&quot;
+            git pull origin master
+
+            git rm -rf .
+
+            cp -r ~/source/public/* .
+
+            git add -A
+            git commit --allow-empty -m &quot;deploy to github pages [ci step]&quot;
+            git push --force --quiet origin master &gt; /dev/null 2&gt;&amp;1
+</code></pre>
+
+<p>And, here we go.</p>
+
+<pre><code>version: 2
+jobs:
+  build:
+</code></pre>
+
+<p>Basic building blocks. Says we have a config file matching the version two standards and we have a build job. Next.</p>
+
+<pre><code>    docker:
+      - image: felicianotech/docker-hugo:0.22.1
+</code></pre>
+
+<p>We want to use the <code>felicianotech/docker-hugo:0.22.1</code> docker image. <a href="https://hub.docker.com/u/felicianotech/">Felicianotech</a> has been kind enough to create an image for building hugo sites on Circle. Cheers mate.</p>
+
+<pre><code>    branches:
+      only:
+        - source
+</code></pre>
+
+<p>We only want it to build on changes made to the source branch. Sweet as.</p>
+
+<pre><code>    working_directory: ~/source
+</code></pre>
+
+<p>We&rsquo;re going to work out of the <code>~/source</code> directory in the container.</p>
+
+<pre><code>    steps:
+      - checkout
+</code></pre>
+
+<p>This here is where we start to list our build steps. The first is to checkout the repo.</p>
+
+<pre><code>      - run:
+          name: &quot;Run Hugo&quot;
+          command: HUGO_ENV=production hugo -v -s ~/source/
+</code></pre>
+
+<p>Next up is to build the site.</p>
+
+<pre><code>      - run:
+          name: &quot;Test Website&quot;
+          command: htmlproofer ~/source/public --allow-hash-href --check-html --empty-alt-ignore
+</code></pre>
+
+<p>Some basic HTML sanity checks. Remove it if you want.</p>
+
+<pre><code>      - run:
+          name: &quot;Git Push&quot;
+          command: |
+</code></pre>
+
+<p>Now, this is where the fun starts.</p>
+
+<pre><code>            cd ~/source
+            remote=$(git config remote.origin.url)
+
+            mkdir ~/build
+            cd ~/build
+
+            git config --global user.name &quot;$GH_NAME&quot; &gt; /dev/null 2&gt;&amp;1
+            git config --global user.email &quot;$GH_EMAIL&quot; &gt; /dev/null 2&gt;&amp;1
+</code></pre>
+
+<p>We move into the source directory so we can get the repo URL. Then we create a dedicated build directory. Following this, basic git configuration. This reminds me, we need to set the environment variables up. We&rsquo;ll come back to that.</p>
+
+<pre><code>            git init
+            git remote add --fetch origin &quot;$remote&quot;
+            git pull origin master
+</code></pre>
+
+<p>Create a new git repo, add our Github project as the source, then pull master.</p>
+
+<pre><code>            git rm -rf .
+</code></pre>
+
+<p>Clean up the repo. Hugo doesn&rsquo;t clean the build directory first in case you&rsquo;ve intentionally put something there, so we need to do it ourselves.</p>
+
+<pre><code>            cp -r ~/source/public/* .
+
+            git add -A
+            git commit --allow-empty -m &quot;deploy to github pages [ci step]&quot;
+            git push --force --quiet origin master &gt; /dev/null 2&gt;&amp;1
+</code></pre>
+
+<p>Copy our current build then push to the master branch.</p>
+
+<p>Yes, yes, I remember. The environment variables. In the Circle CI settings, there&rsquo;s a handy tab called &ldquo;Environment Variables&rdquo;. This is a handy way to get configs/secrets into your build without having to include it in your repo. We want one named <code>GH_EMAIL</code> and another named <code>GH_NAME</code>.</p>
+
+<p>Excellent, with all that set up we should be good to commit the config file and make one last push to Github. You should then be able to see the progress in the Circle dashboard. Any issues should also show up here.</p>
+
+<p>And we&rsquo;re done. You should be all good from this point.</p>
+
+<p>It&rsquo;s now the 23rd. Twelve days after I started. Shit.</p>
+
+<p>Whatever.</p>
+
+    </div>
+    
+    <div class="menu">
+      <h1><a href="/">So Fucking Awesome.</a></h1>
+      <p>
+        <a href="https://github.com/incpac"><i class="fa fa-github"></i></a>
+        <a href="https://twitter.com/hideousnitrogen"><i class="fa fa-twitter"></i></a>
+      </p>
+    </div>
+  </body>
+</html>
