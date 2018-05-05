@@ -3,7 +3,7 @@ date = "2017-09-23T11:23:50+12:00"
 title = "Hugo on Github"
 +++
 
-I'll admit I have a motivation problem. I have real trouble seeing something through in a timely manner. I only started working on the second prototype of my midi controller last weekend. Version one was complete 10 months ago. I had the idea for it 14 months before that. Hell, the subject of this post was finalized and implemented a month ago. I'm starting this on the 11th but it's probably gonna end up being a couple of weeks before it actually gets published.
+Yea, yea, updates. I have a motivation problem. I have real trouble seeing something through in a timely manner. I only started working on the second prototype of my midi controller last weekend. Version one was complete 10 months ago. I had the idea for it 14 months before that. Hell, the subject of this post was finalized and implemented a month ago. I'm starting this on the 11th but it's probably gonna end up being a couple of weeks before it actually gets published.
 
 I suppose, for the blog at least, one of the issues is I want to write more than just the technical steps. I see other blogs with long prefaces going into why they did this and that. A lot of this doesn't apply to me; I simply like building shit.
 
