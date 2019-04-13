@@ -6,10 +6,19 @@
     <description>Recent content in Posts on My New Hugo Site</description>
     <generator>Hugo -- gohugo.io</generator>
     <language>en-us</language>
-    <lastBuildDate>Sat, 23 Sep 2017 11:23:50 +1200</lastBuildDate>
+    <lastBuildDate>Sun, 17 Mar 2019 19:16:00 +1200</lastBuildDate>
     
 	<atom:link href="/posts/index.xml" rel="self" type="application/rss+xml" />
     
+    
+    <item>
+      <title>Deploying CircleCI Golang Builds to Github</title>
+      <link>/posts/2019-03-17-deploying-circleci-golang-builds-to-github/</link>
+      <pubDate>Sun, 17 Mar 2019 19:16:00 +1200</pubDate>
+      
+      <guid>/posts/2019-03-17-deploying-circleci-golang-builds-to-github/</guid>
+      <description>Update 13/04/2019: I&amp;rsquo;ll be honest, walking into this project I really didn&amp;rsquo;t have a firm grasp on how git tags work as I&amp;rsquo;ve never used them. I wrote this post while developing the process and it seemed to work, however shortly after I discovered I truely have still idea how git tags work. Realizing this, I&amp;rsquo;ve determined that my versioning scheme was flawed from the start. I was using the number of commits since the last tag to set the build component of the symantec version.</description>
+    </item>
     
     <item>
       <title>Hugo on Github</title>
