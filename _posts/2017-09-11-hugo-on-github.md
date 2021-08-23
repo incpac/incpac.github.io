@@ -68,7 +68,7 @@ work.
 In your repo create the config file `.circleci/config.yml` I'm going to dump the entire thing here, then we're going to go 
 through it.
 
-```
+```yaml
 version: 2
 jobs:
   build:
@@ -113,7 +113,7 @@ jobs:
 
 And, here we go.
 
-```
+```yaml
 version: 2
 jobs:
   build:
@@ -121,7 +121,7 @@ jobs:
 
 Basic building blocks. Says we have a config file matching the version two standards and we have a build job. Next.
 
-```
+```yaml
     docker:
       - image: felicianotech/docker-hugo:0.22.1
 ```
@@ -129,7 +129,7 @@ Basic building blocks. Says we have a config file matching the version two stand
 We want to use the `felicianotech/docker-hugo:0.22.1` docker image. [Felicianotech](https://hub.docker.com/u/felicianotech/) 
 has been kind enough to create an image for building hugo sites on Circle. Cheers mate.
 
-```
+```yaml
     branches:
       only:
         - source
@@ -137,20 +137,20 @@ has been kind enough to create an image for building hugo sites on Circle. Cheer
 
 We only want it to build on changes made to the source branch. Sweet as.
 
-```
+```yaml
     working_directory: ~/source
 ```
 
 We're going to work out of the `~/source` directory in the container.
 
-```
+```yaml
     steps:
       - checkout
 ```
 
 This here is where we start to list our build steps. The first is to checkout the repo.
 
-```
+```yaml
       - run:
           name: "Run Hugo"
           command: HUGO_ENV=production hugo -v -s ~/source/
@@ -158,7 +158,7 @@ This here is where we start to list our build steps. The first is to checkout th
 
 Next up is to build the site.
 
-```
+```yaml
       - run:
           name: "Test Website"
           command: htmlproofer ~/source/public --allow-hash-href --check-html --empty-alt-ignore
@@ -166,7 +166,7 @@ Next up is to build the site.
 
 Some basic HTML sanity checks. Remove it if you want.
 
-```
+```yaml
       - run:
           name: "Git Push"
           command: |
@@ -174,7 +174,7 @@ Some basic HTML sanity checks. Remove it if you want.
 
 Now, this is where the fun starts.
 
-```
+```yaml
             cd ~/source
             remote=$(git config remote.origin.url)
 
@@ -188,7 +188,7 @@ Now, this is where the fun starts.
 We move into the source directory so we can get the repo URL. Then we create a dedicated build directory. Following this, 
 basic git configuration. This reminds me, we need to set the environment variables up. We'll come back to that.
 
-```
+```yaml
             git init
             git remote add --fetch origin "$remote"
             git pull origin master
@@ -196,14 +196,14 @@ basic git configuration. This reminds me, we need to set the environment variabl
 
 Create a new git repo, add our Github project as the source, then pull master.
 
-```
+```yaml
             git rm -rf .
 ```
 
 Clean up the repo. Hugo doesn't clean the build directory first in case you've intentionally put something there, so we need 
 to do it ourselves.
 
-```
+```yaml
             cp -r ~/source/public/* .
 
             git add -A

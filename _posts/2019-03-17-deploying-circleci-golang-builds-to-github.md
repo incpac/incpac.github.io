@@ -36,7 +36,7 @@ This will create a new release on the Releases tab with binaries definied in the
 
 ## CircleCI Config.
 
-```
+```yaml
 version: 2  
 jobs: 
   build:

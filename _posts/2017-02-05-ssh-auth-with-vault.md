@@ -23,7 +23,7 @@ be useful for providing credentials during the provisioning of new servers.
 This part's pretty easy. We're going to use [Vagrant](https://www.vagrantup.com/) to create two virtual machines. One to act 
 as our Vault server and other for testing authentication. First, copy the following into a file named `Vagrantfile`.
 
-```
+```ruby
 Vagrant.configure '2' do |config|
 
   config.vm.box = 'ubuntu/xenial64'
@@ -41,7 +41,7 @@ end
 
 Then run `vagrant up`. This can take a while as it creates our new VM's. To connect to either server, use one of the following:
 
-```
+```bash
 $ vagrant ssh vault
 $ vagrant ssh test
 ```
@@ -52,7 +52,7 @@ $ vagrant ssh test
 Next we're going to have to set up our Vault server. Installing Vault is really simple; you pretty much just download and run. 
 This entire step is run on our "vault" server.
 
-```
+```bash
 $ sudo apt-get install -y unzip sshpass
 $ curl https://releases.hashicorp.com/vault/0.6.4/vault_0.6.4_linux_amd64.zip > vault.zip
 $ unzip vault.zip
@@ -61,7 +61,7 @@ $ sudo cp vault /usr/local/bin
 
 Now just run `vault` to confirm it's on your PATH.
 
-```
+```bash
 $ vault                                                           
 usage: vault [-version] [-help] <command> [args]                                        
 ...                             
@@ -71,7 +71,7 @@ With Vault installed the next step is to start a Vault server. We're going to ru
 but it means we won't have to screw around with the Sealing/Unsealing process. To read more on that check the official 
 documentation [here.](https://www.vaultproject.io/intro/getting-started/deploy.html)
 
-```
+```bash
 $ vault server -dev -dev-listen-address="0.0.0.0:8200"
 ==> Vault server configuration:
 
@@ -102,7 +102,7 @@ want to seal/unseal the Vault or play with authentication.
 You're going to want to run the part where it says to export the environment variable. By default Vault is expecting to be 
 able to connect via HTTPS but the dev server doesn't have SSL so it won't connect.
 
-```
+```bash
 $ export VAULT_ADDR='http://127.0.0.1:8200'
 $ vault status
 Sealed: false
@@ -120,7 +120,7 @@ Cluster ID: 0b68057c-c620-5c5d-aff1-9a8a4e1321ba
 Awesome. So now we've got our Vault server running, we can set it up to use the SSH backend. First we're going to have to 
 mount this on "vault".
 
-```
+```bash
 $ vault mount ssh
 ```
 
@@ -137,7 +137,7 @@ $ vault write ssh/roles/otp_key_role key_type=otp default_user=localadmin cidr_l
 
 Jump onto the test server and install the agent.
 
-```
+```bash
 $ sudo apt-get install -y unzip
 $ curl https://releases.hashicorp.com/vault-ssh-helper/0.1.2/vault-ssh-helper_0.1.2_linux_amd64.zip > vault_agent.zip
 $ unzip vault_agent.zip
@@ -146,7 +146,7 @@ $ sudo mv vault-ssh-helper /usr/local/bin
 
 Create the config file `/etc/vault-ssh-helper.d/config.hcl`
 
-```
+```hcl
 vault_addr = "http://172.23.1.11:8200"
 tls_skip_verify = true
 ssh_mount_point = "ssh"
@@ -171,7 +171,7 @@ PasswordAuthentication no
 
 Check the config
 
-```
+```bash
 $ sudo vault-ssh-helper -verify-only -config=/etc/vault-ssh-helper.d/config.hcl -dev
 2017/02/04 11:04:48 ==> WARNING: Dev mode is enabled!
 2017/02/04 11:04:48 [INFO] using SSH mount point: ssh
@@ -180,7 +180,7 @@ $ sudo vault-ssh-helper -verify-only -config=/etc/vault-ssh-helper.d/config.hcl 
 
 Create the user
 
-```
+```bash
 sudo adduser localadmin
 ```
 
@@ -188,7 +188,7 @@ sudo adduser localadmin
 
 We're now ready to test. Back on the "vault" server run
 
-```
+```bash
 $ vault ssh -role otp_key_role localadmin@172.23.1.12
 Welcome to Ubuntu 16.04.1 LTS (GNU/Linux 4.4.0-38-generic x86_64)
 
@@ -211,7 +211,7 @@ localadmin@ubuntu-xenial:~$
 If you get `Failed to establish SSH connection: "exit status 6"` it means that you don't yet trust the test server. Just SSH 
 onto it normally and it will save this to the list on known hosts.
 
-```
+```bash
 $ ssh localadmin@172.23.1.12
 ECDSA key fingerprint is SHA256:9rwKBR6UpLOFmX+Et49hFVpNRyhP4i2jJfw/CC70lTw.
 Are you sure you want to continue connecting (yes/no)? yes
