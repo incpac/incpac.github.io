@@ -1,0 +1,62 @@
+title: I'M FUCKING AWESOME
+baseurl: "" # the subpath of your site, e.g. /blog
+url: "https://incpac.github.io" # the base hostname & protocol for your site, e.g. http://example.com
+
+github_username:  incpac
+
+# Build settings
+#theme: minima
+remote_theme: "mmistakes/minimal-mistakes@4.24.0"
+
+plugins:
+  - jekyll-feed
+  - jekyll-include-cache
+
+include:
+  - _pages
+
+permalink: /posts/:year-:month-:day-:title/
+
+exclude:
+  - .jekyll-cache/
+  - Gemfile
+  - Gemfile.lock
+
+title_separator: "|"
+name: "Thomas Claridge"
+repository: "incpac/incpac.github.io"
+search: true
+
+defaults:
+  - scope:
+      path: ""
+      type: posts
+    values:
+      show_data: true
+      read_time: true
+      layout: single
+      author_profile: true
+      share: true 
+      classes: wide
+  - scope:
+      path: ""
+      type: pages
+    values:
+      author_profile: true
+      classes: wide
+
+author:
+  name: "Thomas Claridge"
+  bio: "Some dickhead"
+  avatar: "/assets/profile.png"
+  links:
+    - label: "Here"
+      icon: "fas fa-fw fa-link"
+      url: "https://incpac.github.io"
+    - label: "GitHub"
+      icon: "fab fa-fw fa-github"
+      url: "https://github.com/incpac"
+    - label: "LinkedIn"
+      icon: "fab fa-fw fa-linkedin"
+      url: "https://www.linkedin.com/in/thomas-claridge-837345210/"
+  location: "New Zealand"
