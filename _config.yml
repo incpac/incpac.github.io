@@ -32,7 +32,7 @@ defaults:
       path: ""
       type: posts
     values:
-      show_data: true
+      show_date: true
       read_time: true
       layout: single
       author_profile: true
