@@ -1,4 +1,4 @@
-title: I'M FUCKING AWESOME
+title: Building Something Awesome
 baseurl: "" # the subpath of your site, e.g. /blog
 url: "https://incpac.github.io" # the base hostname & protocol for your site, e.g. http://example.com
 
@@ -47,7 +47,7 @@ defaults:
 
 author:
   name: "Thomas Claridge"
-  bio: "Some dickhead"
+  bio: "Some guy"
   avatar: "/assets/profile.png"
   links:
     - label: "Here"
