@@ -44,7 +44,6 @@ We also need some details about the accounts we're deploying to:
 data "aws_caller_identity" "source" {}
 
 data "aws_caller_identity" "destination" {
-Hello World
   provider = aws.destination
 }
 ```
