@@ -4,6 +4,7 @@ title: Cross-Region, Cross-Account S3 Replication in Terraform
 date: 2021-08-23
 ---
 
+__NOTE: This is no longer relvent as version 4 of the AWS module changed how a lot of this is configure__
 
 We're getting ready to live with a project I'm currently working on. This has led to the last few weeks being full on. Most of 
 it relating to a lot of data replication. 
