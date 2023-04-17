@@ -22,11 +22,11 @@ Somewhere Else he meant AWS. And by We he meant me.
 So I did.
 
 The goal here was to reduce the time it takes to process a video, likely by processing frames in parallel. Ideally we'd toss 
-them in Lambda triggered off EventBridge when the the frame shows up in S3. The alternative would be to just chuck it in EC2, 
-but that would run into the same compute limitations we had with the physical hardware. 
+them in Lambda triggered off EventBridge when the frame shows up in S3. The alternative would be to just chuck it in EC2, but 
+that would run into the same compute limitations we had with the physical hardware. 
 
 Now don't get me wrong, this wasn't easy. First thing was to get the processing into Lambda. Of course the whole thing was way 
-too large. Tensorflow itself wouldn't fit in Lambda at the time. Even once if got that sorted, the issue relevent to this post 
+too large. Tensorflow itself wouldn't fit in Lambda at the time. Even once if got that sorted, the issue relevraent to this post 
 was how to split the video into frames.
 
 Splitting a video into frames isn't actually too hard. You could do this in Python with OpenCV, or from the CLI with FFMPEG. 
@@ -53,7 +53,7 @@ rate. All the documentation indicated that you'd be looking to only grab a frame
 them for promotional material or something. His response? Do it anyway. Hard to argue with that. The result was... bloody epic. 
 
 This had one problem. We can only grab frames x times per second. The video that gets uploaded is recorded at something like 
-29.38 FPS (or something equally not easily divisible by a round number) and I'd previosuly been informed that the telemetry is 
+29.38 FPS (or something equally not easily divisible by a round number) and I'd previously been informed that the telemetry is 
 at the same rate. It's at this point the dev on the project pipes up "actually, the telemetry is at 30 FPS, it's just that it's 
 close enough to the video that I've been treating it as one-for-one." 
 
@@ -63,7 +63,7 @@ Hacking away at it for a bit longer, we managed to get the whole process down to
 tuning, ripping out unnecessary functionality, and decreasing the processed frame rate to 5 FPS (we didn't actually need to 
 process every frame) we were able to get a video through at 1:40ish at the fastest. 
 
-Now of course as additionaly functionality got added, that time's blown out again. But still nowhere near the original 6 hours 
+Now of course as additional functionality got added, that time's blown out again. But still nowhere near the original 6 hours 
 it used to take.
 
 If you're interested in reading more checkout the 
