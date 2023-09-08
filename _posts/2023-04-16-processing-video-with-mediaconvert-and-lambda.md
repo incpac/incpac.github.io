@@ -4,8 +4,8 @@ title: Processing Video with MediaConvert and Lambda
 date: 2023-04-16
 ---
 
-__Story Time:__ So one day I'm just sitting at my desk and my boss gets all up in my business with "Yo, you with the face. Come 
-with me."
+__Story Time:__ So one day I'm just sitting at my desk and my manager gets all up in my business with "Yo, you with the face. 
+Come with me."
 
 He takes me across the carpark to another building where I get introduced to one of our developers. We have a chat about a 
 project he's been working on. It takes a GoPro video, runs each frame through a machine learning algorithm, and spits out a 
@@ -26,12 +26,12 @@ them in Lambda triggered off EventBridge when the frame shows up in S3. The alte
 that would run into the same compute limitations we had with the physical hardware. 
 
 Now don't get me wrong, this wasn't easy. First thing was to get the processing into Lambda. Of course the whole thing was way 
-too large. Tensorflow itself wouldn't fit in Lambda at the time. Even once if got that sorted, the issue relevraent to this post 
+too large. Tensorflow itself wouldn't fit in Lambda at the time. Even once we got that sorted, the issue relevant to this post 
 was how to split the video into frames.
 
 Splitting a video into frames isn't actually too hard. You could do this in Python with OpenCV, or from the CLI with FFMPEG. 
-Our real problem was getting enough ephemeral storage in Lambda to stash not only the source video, but each of the 65k frames 
-that make it up, and getting it all done in the before the timeout.
+Our real problem was getting enough ephemeral storage in Lambda to stash not only the source video, but also each of the 65k 
+frames that make it up, and getting it all done in the before the timeout.
 
 With the 500MB of disk Lambda gave us at the time we could either stash the video or the frames but not both. Sweet as, what if 
 we skip splitting the video and do it straight in the frame processing. OK, so you want to pull the video from S3 65k times 
@@ -50,12 +50,12 @@ how the project was going.
 After unloading in a way that would make a therapist take up day drinking, he asks me "have you looked at MediaConvert?" Now, I 
 had actually come across MediaConvert in my research. While it won't split the video into frames, it will take stills at a set 
 rate. All the documentation indicated that you'd be looking to only grab a frame every few seconds, with the intention of using
-them for promotional material or something. His response? Do it anyway. Hard to argue with that. The result was... bloody epic. 
+them for promotional material or something. His response? Do it anyway. Hard to argue with that. The result was bloody epic. 
 
-This had one problem. We can only grab frames x times per second. The video that gets uploaded is recorded at something like 
-29.38 FPS (or something equally not easily divisible by a round number) and I'd previously been informed that the telemetry is 
-at the same rate. It's at this point the dev on the project pipes up "actually, the telemetry is at 30 FPS, it's just that it's 
-close enough to the video that I've been treating it as one-for-one." 
+This had one problem. We can only grab frames x times per second. The video that gets uploaded is recorded at 29.38 FPS (or 
+something equally not easily divisible by a round number) and I'd previously been informed that the telemetry is at the same 
+rate. It's at this point the dev on the project pipes up "actually, the telemetry is at 30 FPS, it's just that it's close 
+enough to the video that I've been treating it as one-for-one." 
 
 Office supplies may or may not have been thrown at this point. Reports vary.
 
@@ -87,7 +87,7 @@ variable "function_name" {
 }
 
 variable "handler" {
-  description = "Funciton entrypoint"
+  description = "Function entrypoint"
 }
 
 variable "iam_policy" {
@@ -100,6 +100,11 @@ variable "runtime" {
 
 variable "source_dir" {
   description = "Directory for the Lambda Functions source code"
+}
+
+variable "timeout" {
+  description = "Time in seconds before the Lambda function will end with a failed state"
+  default     = 3
 }
 
 resource "aws_iam_role" "lambda_function" {
@@ -143,6 +148,7 @@ resource "aws_lambda_function" "lambda_function" {
   filename      = data.archive_file.lambda_function.output_path
   runtime       = var.runtime
   handler       = var.handler
+  timeout       = var.timeout
 
   dynamic "environment" {
     for_each = var.environment_variables == null ? [] : [1]
@@ -361,10 +367,10 @@ table = dynamodb.Table(os.environ.get('JOBS_TABLE'))
 def lambda_handler(event, context):
     for record in event['Records']:
         filename = record['s3']['object']['key']
-        job_id = '/'.join(filename.split('/')[:-1])
+        video_id = '/'.join(filename.split('/')[:-1])
 
         table.update_item(
-                Key={'VideoId': job_id},
+                Key={'VideoId': video_id},
                 UpdateExpression='SET ' +
                 'IngressVideoBucket= :ingress_video_bucket,' +
                 'IngressVideoKey= :ingress_video_key',
@@ -470,9 +476,9 @@ You should now be good to click on Create in the bottom right.
 Once the job is complete, open it up and click on View JSON in the top right. We're going to edit this a bit and save it into 
 `lambda_functions/ingress_processor/mediaconvert_job.json.tpl`
 
-Remove lines 2-4 from the template file. Replace the value of `OutputGroups.OutputGroupSettings.FileGroupSettings.Destination` 
-with `s3://${FRAMES_BUCKET}/${VIDEO_ID}/` and the value of `Inputs[0].FileInput` with `s3://${INGRESS_BUCKET}/${VIDEO_PATH}`.
-Finally remove lines 72-77.
+Remove everything wrapping around the `Settings` value until it is the root of the file. Replace the value of 
+`OutputGroups.OutputGroupSettings.FileGroupSettings.Destination` with `${output_path}` and the value of `Inputs[0].FileInput` 
+with `${input_path}`.
 
 Back in our Ingress Lambda Function
 
@@ -502,7 +508,7 @@ def lambda_handler(event, context):
         input_bucket = record['s3']['bucket']['name']
 
         input_path = f's3://{input_bucket}/{filepath}'
-        output_path = f's3://{frames_bucket}/{job_id}/'        
+        output_path = f's3://{frames_bucket}/{video_id}/'        
 
         job_config = {
             'input_path': input_path,
@@ -524,7 +530,7 @@ def lambda_handler(event, context):
         mediaconvert_job_id = res['Job']['Id']
 
         table.update_item(
-                Key={'VideoId': job_id},
+                Key={'VideoId': video_id},
                 UpdateExpression='SET ' +
                 'IngressVideoBucket= :ingress_video_bucket,' +
                 'IngressVideoKey= :ingress_video_key,' +
@@ -557,7 +563,7 @@ data "aws_iam_policy_document" "ingress_processor_policy" {
       "iam:PassRole"
     ]
 
-    resources = ["*"]
+    resources = [aws_iam_role.mediaconvert.arn]
   }
 }
 
@@ -625,6 +631,7 @@ module "mediaconvert_success_handler" {
   iam_policy    = data.aws_iam_policy_document.mediaconvert_success_handler.json
   runtime       = "python3.8"
   source_dir    = "${path.root}/lambda_functions/mediaconvert_success_handler"
+  timeout       = 60 # This may need to be adjusted depending on max video length and framerate
 
   environment_variables = {
     "JOBS_TABLE"              = aws_dynamodb_table.jobs.name
@@ -773,6 +780,8 @@ def lambda_handler(event, context):
             return video_split_handler(event)
 ```
 
+From here, toss a video into the ingress bucket (remember to include a video ID directory) and watch it get ripped to pieces.
+
 
 ## Wrapping Up
 
@@ -781,3 +790,6 @@ Individual frames will be dumped out into another S3 bucket, from which they can
 
 The biggest takeaway for me was to never just skip over a potential solution simply because it doesn't look to be designed for
 your purpose. Everything is a hammer if you're game enough.
+
+If you're having difficulty following allow, you can find a working copy on my 
+[GitHub.](https://github.com/incpac/mediaconver-frame-processor/releases/tag/blogpost%2Fprocessing-video-mediaconvert-lambda)
