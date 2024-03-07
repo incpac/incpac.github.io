@@ -17,7 +17,7 @@ want to deal with for this solution.
 So I start thinking "you've been meaning to try out Rust for a while, why not now?" Rust has a great
 [Lambda tool](https://crates.io/crates/lambda_runtime). You can use it on your local machine and have it build Lambda compatible binaries.
 
-After getting a sample Hello World working in Lambda, I went on the hunt for a Sobel Operator library. I came across
+After getting a simple Hello World working in Lambda, I went on the hunt for a Sobel Operator library. I came across
 [Edgy](https://github.com/dangreco/edgy) by a guy named Dan Greco. Edgy is a command line app rather than a library, but I could pull
 what I needed from it.
 
@@ -37,7 +37,7 @@ resource "aws_s3_bucket" "processed_frames" {
 
 ## Modify Lambda Module
 
-We're going to run out frame processor on an arm64 Lambda. Add the following variable to the module.
+We're going to run our frame processor on an arm64 Lambda. Add the following variable to the module.
 
 ```hcl
 variable "architectures" {
