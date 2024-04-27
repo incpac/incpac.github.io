@@ -2,7 +2,7 @@ title: Building Something Awesome
 baseurl: "" # the subpath of your site, e.g. /blog
 url: "https://incpac.github.io" # the base hostname & protocol for your site, e.g. http://example.com
 
-github_username:  incpac
+github_username: incpac
 
 # Build settings
 #theme: minima
@@ -26,6 +26,7 @@ title_separator: "|"
 name: "Thomas Claridge"
 repository: "incpac/incpac.github.io"
 search: true
+timezone: Pacific/Auckland
 
 defaults:
   - scope:
@@ -36,7 +37,7 @@ defaults:
       read_time: true
       layout: single
       author_profile: true
-      share: true 
+      share: true
       classes: wide
   - scope:
       path: ""
