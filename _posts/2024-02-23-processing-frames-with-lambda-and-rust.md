@@ -9,21 +9,21 @@ _This is a continuation of the [Processing Video with MediaConvert and Lambda]({
 With the frames getting stored in S3 the next step is to process them. In this demo we're going to run a
 [Sobel Operator](https://en.wikipedia.org/wiki/Sobel_operator) over them before saving in another S3 bucket.
 
-Now my default GoTo for Lambda functions is Python. It's a popular enought language you can easily find help for. However, any image
-processing library I know of includes C libraries that need compiling on install. This causes problems because (as far as I'm aware)
-Pip doesn't support cross-compiling during library install. Which makes packaging up Lambda functions from my Macbook more pain than I
-want to deal with for this solution.
+Now my default GoTo for Lambda functions is Python. It's a popular enough language you can easily find help for.
+However, any image processing library I know of includes C libraries that need compiling on install. This causes
+problems because (as far as I'm aware) Pip doesn't support cross-compiling during library install. Which makes packaging
+up Lambda functions from my Macbook more pain than I want to deal with for this solution.
 
 So I start thinking "you've been meaning to try out Rust for a while, why not now?" Rust has a great
-[Lambda tool](https://crates.io/crates/lambda_runtime). You can use it on your local machine and have it build Lambda compatible binaries.
+[Lambda tool](https://crates.io/crates/lambda_runtime). You can use it on your local machine and have it build Lambda
+compatible binaries.
 
 After getting a simple Hello World working in Lambda, I went on the hunt for a Sobel Operator library. I came across
-[Edgy](https://github.com/dangreco/edgy) by a guy named Dan Greco. Edgy is a command line app rather than a library, but I could pull
-what I needed from it.
+[Edgy](https://github.com/dangreco/edgy) by a guy named Dan Greco. Edgy is a command line app rather than a library,
+but I could pull what I needed from it.
 
-From there it was a simple case of implementing the infrastructure to trigger the Lambda on new items to the frame bucket, having the
-function process them, then save them into the output bucket.
-
+From there it was a simple case of implementing the infrastructure to trigger the Lambda on new items to the frame
+bucket, having the function process them, then save them into the output bucket.
 
 ## Output Bucket
 
@@ -83,9 +83,9 @@ serde = "1.0.196"
 serde_json = "1.0.113"
 ```
 
-In `main.rs` we want to import a few libraries. Most of this is standard Lambda stuff. `image` is the image library we're going to use (duh).
-`tracing` is for logging. `mod sobel` refers to the `sobel.rs` we're going to create further on.
-
+In `main.rs` we want to import a few libraries. Most of this is standard Lambda stuff. `image` is the image library
+we're going to use (duh). `tracing` is for logging. `mod sobel` refers to the `sobel.rs` we're going to create further
+on.
 
 ```rust
 extern crate aws_config;
@@ -110,10 +110,11 @@ static TMP_SOURCE_FILE: &str = "/tmp/source.jpg";
 static TMP_OUTPUT_FILE: &str = "/tmp/output.jpg";
 ```
 
-A function to process files. This will download the file from S3, run the Sobel Operator on it, then upload it to the output
-bucket using the same key as the ingress object.
+A function to process files. This will download the file from S3, run the Sobel Operator on it, then upload it to the
+output bucket using the same key as the ingress object.
 
 {% raw %}
+
 ```rust
 async fn handle_record(client: Client, bucket: &str, key: &str) -> Result<(), Error> {
     tracing::debug!({%bucket, %key}, "Handling record");
@@ -155,11 +156,13 @@ async fn handle_record(client: Client, bucket: &str, key: &str) -> Result<(), Er
     Ok(())
 }
 ```
+
 {% endraw %}
 
 We need to update the `function_handler()` to process the incoming `S3Event`.
 
 {% raw %}
+
 ```rust
 #[tracing::instrument(skip(event), fields(req_id = %event.context.request_id))]
 async fn function_handler(event: LambdaEvent<S3Event>) -> Result<(), Error> {
@@ -184,10 +187,11 @@ async fn function_handler(event: LambdaEvent<S3Event>) -> Result<(), Error> {
     Ok(())
 }
 ```
+
 {% endraw %}
 
-These events contain one or more records. Each record is a file that has been uploaded to S3. We pull the object key and bucket name from
-the record and make a call to the `handle_record()` function.
+These events contain one or more records. Each record is a file that has been uploaded to S3. We pull the object key and
+bucket name from the record and make a call to the `handle_record()` function.
 
 In the `main()` function, we're going to update the logging functionality.
 
@@ -204,12 +208,14 @@ async fn main() -> Result<(), Error> {
 }
 ```
 
-What we've got here will take the event details from the S3 trigger, iterate over ever record in the event, and process each image using
-the `process_image()` function from the `sobel` module.
+What we've got here will take the event details from the S3 trigger, iterate over ever record in the event, and process
+each image using the `process_image()` function from the `sobel` module.
 
-For the module we need to create `sobel.rs` in the `src` directory. In here we're going to refactor some of the `Edgy` app.
+For the module we need to create `sobel.rs` in the `src` directory. In here we're going to refactor some of the `Edgy`
+app.
 
 {% raw %}
+
 ```rust
 use image::{GenericImageView, ImageBuffer, Luma};
 
@@ -253,6 +259,7 @@ pub fn process_image(source_filename: &str, output_filename: &str, blur_modifier
     buff.save(output_filename).unwrap();
 }
 ```
+
 {% endraw %}
 
 You can compile the function with
@@ -265,7 +272,8 @@ This will create a `target/lambda/frame-processor` directory that contains every
 
 ## Lambda Function Infrastructure
 
-Now that we've built our executable, we need to create the function in AWS. First we define the access our function gets.
+Now that we've built our executable, we need to create the function in AWS. First we define the access our function
+gets.
 
 ```terraform
 data "aws_iam_policy_document" "frame_processor" {
@@ -309,7 +317,8 @@ data "aws_iam_policy_document" "frame_processor" {
 }
 ```
 
-This lets it pull images from the MediaConvert output and write to our Processed Frames bucket. It also grants permissions to write logs.
+This lets it pull images from the MediaConvert output and write to our Processed Frames bucket. It also grants
+permissions to write logs.
 
 For the function itself we're going to make use of our `lambda_function` module.
 
@@ -333,13 +342,14 @@ module "frame_processor" {
 }
 ```
 
-The `BLUR_MODIFIER` variable adjusts how much blur is used when processing the image. Adjust this until you find the sweet spot.
+The `BLUR_MODIFIER` variable adjusts how much blur is used when processing the image. Adjust this until you find the
+sweet spot.
 
-Next we need to connect the function to the S3 bucket. This is done with a `aws_s3_bucket_notification` resource. We want to filter
-for `ObjectCreated` events so the function gets run every time a new image gets uploaded to the bucket.
+Next we need to connect the function to the S3 bucket. This is done with a `aws_s3_bucket_notification` resource. We
+want to filter for `ObjectCreated` events so the function gets run every time a new image gets uploaded to the bucket.
 
-To allow the bucket to trigger the Lambda function we need an `aws_lambda_function` resource. This grants the bucket the `InvokeFunction`
-permission.
+To allow the bucket to trigger the Lambda function we need an `aws_lambda_function` resource. This grants the bucket the
+`InvokeFunction` permission.
 
 ```terraform
 resource "aws_lambda_permission" "frame_processor_trigger" {
@@ -362,21 +372,22 @@ resource "aws_s3_bucket_notification" "frame_processor_trigger" {
 }
 ```
 
-
 ## Testing
 
-I'm sure once you've got all this deploy you're going to want to test it. The complete method would be to upload a video to the
-ingress bucket. However, if you can't be bothered waiting for MediaConvert, you can simply upload a JPEG to the frames bucket. It needs
-to have a `.jpg` file extension as we filter for it. If everything's working correctly you should see a file show up in the
-ProcessedFrames bucket.
+I'm sure once you've got all this deploy you're going to want to test it. The complete method would be to upload a video
+to the ingress bucket. However, if you can't be bothered waiting for MediaConvert, you can simply upload a JPEG to the
+frames bucket. It needs to have a `.jpg` file extension as we filter for it. If everything's working correctly you
+should see a file show up in the ProcessedFrames bucket.
 
-If you're having trouble, check out the [complete diff](https://github.com/incpac/mediaconvert-frame-processor/commit/5db3050379bf534abbe8458cd35beb48676d5768) for all changes made.
-
+If you're having trouble, check out the
+[complete diff](https://github.com/incpac/mediaconvert-frame-processor/commit/5db3050379bf534abbe8458cd35beb48676d5768)
+for all changes made.
 
 ## Wrapping Up
 
-With this we've got a pipeline that rips videos into frames and processes them. Next steps would be to update the FrameProcessor to track the number of frames we've processed.
-We currently store the total number of frames in DynamoDB but we may want to reconsider that due to the number of IO requests per video.
+With this we've got a pipeline that rips videos into frames and processes them. Next steps would be to update the
+FrameProcessor to track the number of frames we've processed. We currently store the total number of frames in DynamoDB
+but we may want to reconsider that due to the number of IO requests per video.
 
-Once that's done we'll be able to tell when we've processed all frames for a particular video and we can stitch it back together again. I'll aim to get that sorted sooner than the
-10 months this post took.
+Once that's done we'll be able to tell when we've processed all frames for a particular video and we can stitch it back
+together again. I'll aim to get that sorted sooner than the 10 months this post took.

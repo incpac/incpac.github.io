@@ -243,7 +243,7 @@ resource "aws_lb_target_group_attachment" "service_alb" {
 }
 ```
 
-The Listener for the ABL needs a certificate if we want to use HTTPS. We're going to use the TLS Terraform provider for
+The Listener for the ALB needs a certificate if we want to use HTTPS. We're going to use the TLS Terraform provider for
 this, but generatlly you'd want a cetificate signed by a trusted CA.
 
 ```terraform
@@ -504,7 +504,7 @@ resource "aws_vpc_endpoint" "consumer_privatelink" {
 }
 
 output "consumer_endpoint_dns_names" {
-  description = "Dmoain names of the Consumer VPC Endpoint"
+  description = "Domain names of the Consumer VPC Endpoint"
   value       = [for dns_entry in aws_vpc_endpoint.consumer_privatelink.dns_entry : "https://${dns_entry.dns_name}"]
 }
 ```
@@ -518,7 +518,7 @@ output variable. You should see the standard Nginx landing page.
 ## Conclusion
 
 In this post, we walked through the process of creating VPC endpoints with AWS PrivateLink using Terraform. We started
-by setting up a service providerEC2 instance inside a VPC behind an Application Load Balancer and Network Load Balancer.
+by setting up a service provider EC2 instance inside a VPC behind an Application Load Balancer and Network Load Balancer.
 We then created a VPC Endpoint Service and shared it with a consumer VPC, allowing the consumer to securely access the
 service over the AWS network.
 
