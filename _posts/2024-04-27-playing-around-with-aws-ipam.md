@@ -602,7 +602,7 @@ variable "vpc_netmask_length" {
 
 variable "regional_pools" {
   type = map(string)
-  description = "Dict of IPAM pool IDs for each reagion"
+  description = "Dict of IPAM pool IDs for each region"
 }
 
 data "aws_caller_identity" "deploy" {}
