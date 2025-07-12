@@ -1,0 +1,114 @@
+# Taskfile.yml
+version: '3'
+
+vars:
+  CONTAINER_NAME: blog-dev
+  IMAGE_NAME: github-pages-dev
+  PORT: 4000
+
+tasks:
+  build:
+    desc: Build the Docker image for Jekyll development
+    cmds:
+      - docker build -t {{.IMAGE_NAME}} .
+
+  serve:
+    desc: Run Jekyll server in Docker container
+    deps: [build]
+    cmds:
+      - |
+        docker run --rm -it \
+          --name {{.CONTAINER_NAME}} \
+          -p {{.PORT}}:{{.PORT}} \
+          -v "$(pwd):/site" \
+          {{.IMAGE_NAME}}
+
+  serve-bg:
+    desc: Run Jekyll server in background
+    deps: [build]
+    cmds:
+      - |
+        docker run --rm -d \
+          --name {{.CONTAINER_NAME}} \
+          -p {{.PORT}}:{{.PORT}} \
+          -v "$(pwd):/site" \
+          {{.IMAGE_NAME}}
+      - echo "Blog server running at http://localhost:{{.PORT}}"
+      - echo "Run 'task stop' to stop the server"
+
+  stop:
+    desc: Stop the Jekyll server
+    cmds:
+      - docker stop {{.CONTAINER_NAME}} || true
+
+  restart:
+    desc: Restart the Jekyll server
+    cmds:
+      - task: stop
+      - task: serve-bg
+
+  shell:
+    desc: Get a shell inside the Jekyll container
+    deps: [build]
+    cmds:
+      - |
+        docker run --rm -it \
+          --name {{.CONTAINER_NAME}}-shell \
+          -v "$(pwd):/site" \
+          {{.IMAGE_NAME}} \
+          /bin/sh
+
+  clean:
+    desc: Clean up Docker resources
+    cmds:
+      - docker stop {{.CONTAINER_NAME}} || true
+      - docker rmi {{.IMAGE_NAME}} || true
+      - docker system prune -f
+
+  logs:
+    desc: Show Jekyll server logs
+    cmds:
+      - docker logs -f {{.CONTAINER_NAME}}
+
+  new-post:
+    desc: Create a new blog post
+    cmds:
+      - |
+        DATE=$(date +%Y-%m-%d)
+        TITLE="{{.CLI_ARGS}}"
+        SLUG=$(echo "$TITLE" | tr '[:upper:]' '[:lower:]' | sed 's/[^a-z0-9]/-/g' | sed 's/--*/-/g' | sed 's/^-\|-$//g')
+        FILENAME="_posts/${DATE}-${SLUG}.md"
+        
+        cat > "$FILENAME" << EOF
+        ---
+        layout: post
+        title: "$TITLE"
+        date: $DATE
+        categories: []
+        tags: []
+        ---
+        
+        # $TITLE
+        
+        Your content here...
+        EOF
+        
+        echo "Created new post: $FILENAME"
+
+  init:
+    desc: Initialize a new Jekyll site (if needed)
+    cmds:
+      - |
+        if [ ! -f "_config.yml" ]; then
+          docker run --rm -v "$(pwd):/site" {{.IMAGE_NAME}} jekyll new . --force
+          echo "Jekyll site initialized!"
+        else
+          echo "Jekyll site already exists"
+        fi
+
+  install:
+    desc: Install/update gem dependencies
+    deps: [build]
+    cmds:
+      - |
+        docker run --rm -v "$(pwd):/site" {{.IMAGE_NAME}} bundle install
