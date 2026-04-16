@@ -377,8 +377,8 @@ We're going to set up three spokes. Two in account one across two different regi
 
 ```terraform
 locals {
-  account_id_1 = "690402899467"
-  account_id_2 = "851725293593"
+  account_id_1 = "111111111111"
+  account_id_2 = "222222222222"
 }
 
 provider "aws" {
@@ -825,8 +825,8 @@ We give that an apply to see how we're going and ... damn. Another road block.
 
 ```
 │ Error: creating IPAM Pool: UnauthorizedOperation: You are not authorized to perform this operation. User:
-│ arn:aws:sts::690402899467:assumed-role/SharedServices-AdministratorAccess/aws-go-sdk-1714091794708223000 is not
-│ authorized to perform: ec2:CreateIpamPool on resource: arn:aws:ec2::381492113005:ipam-pool/ipam-pool-053687ec45ef90dfc
+│ arn:aws:sts::1111111111111:assumed-role/SharedServices-AdministratorAccess/aws-go-sdk-1714091794708223000 is not
+│ authorized to perform: ec2:CreateIpamPool on resource: arn:aws:ec2::222222222222:ipam-pool/ipam-pool-053687ec45ef90dfc
 │ because no resource-based policy allows the ec2:CreateIpamPool action.
 ```
 
